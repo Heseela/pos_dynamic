@@ -364,9 +364,7 @@ export default function IndividualOrderPage() {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const taxRate = 13;
-  const taxAmount = (subtotal * taxRate) / 100;
-  const total = subtotal + taxAmount;
+  const total = subtotal;
 
   const validateCustomer = () => {
     const newErrors = {};
@@ -402,7 +400,7 @@ export default function IndividualOrderPage() {
         })),
         grossAmount: subtotal,
         discount: { value: 0, amount: 0 },
-        tax: { rate: taxRate, amount: taxAmount },
+        tax: { rate: 0, amount: 0 },
         total: total,
         paymentMethod: "",
         paymentStatus: "pending",
@@ -469,7 +467,7 @@ export default function IndividualOrderPage() {
         })),
         grossAmount: subtotal,
         discount: { value: 0, amount: 0 },
-        tax: { rate: taxRate, amount: taxAmount },
+        tax: { rate: 0, amount: 0 },
         total: total,
         paymentMethod: "",
         paymentStatus: "pending",
@@ -723,10 +721,6 @@ export default function IndividualOrderPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Subtotal</span>
                         <span>रु {subtotal.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">VAT ({taxRate}%)</span>
-                        <span>रु {taxAmount.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between font-bold text-lg pt-2 border-t">
                         <span>Total</span>

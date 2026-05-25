@@ -59,7 +59,7 @@ export default function BillingPage() {
       (sum, order) =>
         sum +
         (order?.items || []).reduce(
-          (s, i) => s + (i.price || 0) * (i.quantity || 0),
+          (s, i) => s + (Number(i.price || 0) * Number(i.quantity || 0)),
           0
         ),
       0
@@ -77,18 +77,73 @@ export default function BillingPage() {
   const total = subtotal - discountAmount() + taxAmount();
 
   // =========================
+  // AUTO UPDATE FULL PAYMENT
+  // =========================
+  useEffect(() => {
+    if (bill.payment.status === "full") {
+      if (bill.payment.method === "cash") {
+        setBill((prev) => ({
+          ...prev,
+          payment: {
+            ...prev.payment,
+            paidAmount: {
+              cash: total,
+              online: 0,
+            },
+            remaining: 0,
+          },
+        }));
+      }
+
+      if (bill.payment.method === "online") {
+        setBill((prev) => ({
+          ...prev,
+          payment: {
+            ...prev.payment,
+            paidAmount: {
+              cash: 0,
+              online: total,
+            },
+            remaining: 0,
+          },
+        }));
+      }
+    }
+  }, [total, bill.payment.status, bill.payment.method]);
+
+  // =========================
   // STATUS CHANGE
   // =========================
   const handleStatusChange = (status) => {
     setBill((p) => {
-      let paidAmount = { ...p.payment.paidAmount };
+      let paidAmount = {
+        cash: 0,
+        online: 0,
+      };
+
       let remaining = total;
 
       if (status === "full") {
-        paidAmount = {
-          cash: p.payment.method === "cash" ? total : 0,
-          online: p.payment.method === "online" ? total : 0,
-        };
+        if (p.payment.method === "cash") {
+          paidAmount = {
+            cash: total,
+            online: 0,
+          };
+        }
+
+        if (p.payment.method === "online") {
+          paidAmount = {
+            cash: 0,
+            online: total,
+          };
+        }
+
+        if (p.payment.method === "mixed") {
+          paidAmount = {
+            cash: total,
+            online: 0,
+          };
+        }
 
         remaining = 0;
       }
@@ -127,6 +182,79 @@ export default function BillingPage() {
   };
 
   // =========================
+  // PAYMENT METHOD CHANGE
+  // =========================
+  const handleMethodChange = (method) => {
+    setBill((p) => {
+      let paidAmount = {
+        cash: 0,
+        online: 0,
+      };
+
+      // FULL PAYMENT
+      if (p.payment.status === "full") {
+        if (method === "cash") {
+          paidAmount = {
+            cash: total,
+            online: 0,
+          };
+        }
+
+        if (method === "online") {
+          paidAmount = {
+            cash: 0,
+            online: total,
+          };
+        }
+
+        if (method === "mixed") {
+          paidAmount = {
+            cash: total,
+            online: 0,
+          };
+        }
+      }
+
+      // HALF PAYMENT
+      if (p.payment.status === "half") {
+        if (method === "cash") {
+          paidAmount = {
+            cash: halfPaymentAmount,
+            online: 0,
+          };
+        }
+
+        if (method === "online") {
+          paidAmount = {
+            cash: 0,
+            online: halfPaymentAmount,
+          };
+        }
+
+        if (method === "mixed") {
+          paidAmount = {
+            cash: 0,
+            online: 0,
+          };
+        }
+      }
+
+      return {
+        ...p,
+
+        payment: {
+          ...p.payment,
+          method,
+          paidAmount,
+          remaining:
+            total -
+            (paidAmount.cash + paidAmount.online),
+        },
+      };
+    });
+  };
+
+  // =========================
   // HALF PAYMENT
   // =========================
   const handleHalfPaymentChange = (value) => {
@@ -147,31 +275,42 @@ export default function BillingPage() {
 
     setHalfPaymentAmount(amount);
 
-    setBill((p) => ({
-      ...p,
+    setBill((p) => {
+      let paidAmount = {
+        cash: 0,
+        online: 0,
+      };
 
-      payment: {
-        ...p.payment,
+      if (p.payment.method === "cash") {
+        paidAmount = {
+          cash: amount,
+          online: 0,
+        };
+      }
 
-        paidAmount: {
-          cash:
-            p.payment.method === "cash"
-              ? amount
-              : p.payment.method === "online"
-              ? 0
-              : amount,
+      if (p.payment.method === "online") {
+        paidAmount = {
+          cash: 0,
+          online: amount,
+        };
+      }
 
-          online:
-            p.payment.method === "online"
-              ? amount
-              : p.payment.method === "cash"
-              ? 0
-              : 0,
+      if (p.payment.method === "mixed") {
+        paidAmount = p.payment.paidAmount;
+      }
+
+      return {
+        ...p,
+
+        payment: {
+          ...p.payment,
+          paidAmount,
+          remaining:
+            total -
+            (paidAmount.cash + paidAmount.online),
         },
-
-        remaining: total - amount,
-      },
-    }));
+      };
+    });
   };
 
   // =========================
@@ -181,15 +320,16 @@ export default function BillingPage() {
     setBill((p) => {
       const newCash =
         cash !== undefined
-          ? cash
-          : p.payment.paidAmount.cash;
+          ? Number(cash)
+          : Number(p.payment.paidAmount.cash);
 
       const newOnline =
         online !== undefined
-          ? online
-          : p.payment.paidAmount.online;
+          ? Number(online)
+          : Number(p.payment.paidAmount.online);
 
       const paid = newCash + newOnline;
+
       const remaining = total - paid;
 
       if (paid > total) {
@@ -233,19 +373,44 @@ export default function BillingPage() {
     try {
       const order = table?.orders?.[0];
 
-      if (bill.payment.status === "half") {
-        const paidAmount =
-          bill.payment.paidAmount.cash +
-          bill.payment.paidAmount.online;
+      if (!order?.id) {
+        toast.error("Order not found");
+        return;
+      }
 
-        if (paidAmount <= 0) {
+      const finalPaidAmount = {
+        cash: Number(bill.payment.paidAmount.cash || 0),
+        online: Number(bill.payment.paidAmount.online || 0),
+      };
+
+      const totalPaid =
+        finalPaidAmount.cash +
+        finalPaidAmount.online;
+
+      // FULL PAYMENT FIX
+      if (
+        bill.payment.status === "full" &&
+        totalPaid === 0
+      ) {
+        if (bill.payment.method === "cash") {
+          finalPaidAmount.cash = total;
+        }
+
+        if (bill.payment.method === "online") {
+          finalPaidAmount.online = total;
+        }
+      }
+
+      // VALIDATION
+      if (bill.payment.status === "half") {
+        if (totalPaid <= 0) {
           toast.error(
             "Please enter an amount for half payment"
           );
           return;
         }
 
-        if (paidAmount >= total) {
+        if (totalPaid >= total) {
           toast.error(
             "For half payment, amount should be less than total bill"
           );
@@ -253,56 +418,83 @@ export default function BillingPage() {
         }
       }
 
-      const res = await fetch(`/api/order/${order?.id}`, {
+      const payload = {
+        tableId,
+
+        subtotal,
+
+        discount: {
+          value: Number(bill.discount.value || 0),
+          amount: Number(discountAmount()),
+        },
+
+        tax: {
+          rate: Number(bill.taxRate || 0),
+          amount: Number(taxAmount()),
+        },
+
+        total: Number(total),
+
+        paymentStatus:
+          bill.payment.status === "full"
+            ? "PAID"
+            : bill.payment.status === "half"
+            ? "PARTIAL"
+            : "CREDIT",
+
+        paymentMethod: bill.payment.method.toUpperCase(),
+
+        paidAmount: {
+          cash: Number(finalPaidAmount.cash),
+          online: Number(finalPaidAmount.online),
+        },
+
+        remainingAmount: Number(
+          total -
+            (finalPaidAmount.cash +
+              finalPaidAmount.online)
+        ),
+
+        orderStatus:
+          bill.payment.status === "full"
+            ? "COMPLETED"
+            : "PENDING",
+
+        tableStatus:
+          bill.payment.status === "full"
+            ? "available"
+            : "occupied",
+      };
+
+      console.log("PAYLOAD =>", payload);
+
+      const res = await fetch(`/api/order/${order.id}`, {
         method: "PATCH",
 
         headers: {
           "Content-Type": "application/json",
         },
 
-        body: JSON.stringify({
-          tableId,
-
-          subtotal,
-
-          discount: bill.discount,
-
-          tax: {
-            rate: bill.taxRate,
-            amount: taxAmount(),
-          },
-
-          total,
-
-          paymentStatus: bill.payment.status,
-          paymentMethod: bill.payment.method,
-
-          paidAmount: bill.payment.paidAmount,
-
-          remainingAmount: bill.payment.remaining,
-
-          tableStatus:
-            bill.payment.status === "full"
-              ? "available"
-              : "occupied",
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
+      console.log("RESPONSE =>", data);
+
       if (!res.ok) {
-        throw new Error(data.message);
+        throw new Error(
+          data.message || "Payment failed"
+        );
       }
 
       toast.success(
         bill.payment.status === "full"
           ? "Payment completed successfully"
           : `Payment of ₹${(
-              bill.payment.paidAmount.cash +
-              bill.payment.paidAmount.online
-            ).toFixed(2)} received. Remaining: ₹${bill.payment.remaining.toFixed(
-              2
-            )}`
+              finalPaidAmount.cash +
+              finalPaidAmount.online
+            ).toFixed(2)} received`
       );
 
       router.push("/pos");
@@ -315,8 +507,8 @@ export default function BillingPage() {
   // PAID AMOUNT
   // =========================
   const paidAmount =
-    bill.payment.paidAmount.cash +
-    bill.payment.paidAmount.online;
+    Number(bill.payment.paidAmount.cash || 0) +
+    Number(bill.payment.paidAmount.online || 0);
 
   // =========================
   // LOADING
@@ -440,7 +632,8 @@ export default function BillingPage() {
 
             {bill.payment.status !== "full" && (
               <p className="text-xs sm:text-sm text-gray-500 mt-2 break-words">
-                Paid: ₹{paidAmount.toFixed(2)} | Remaining:
+                Paid: ₹{paidAmount.toFixed(2)} |
+                Remaining:
                 ₹{bill.payment.remaining.toFixed(2)}
               </p>
             )}
@@ -497,14 +690,7 @@ export default function BillingPage() {
                 className="w-full p-3 rounded-xl border mb-4 text-sm sm:text-base"
                 value={bill.payment.method}
                 onChange={(e) =>
-                  setBill((p) => ({
-                    ...p,
-
-                    payment: {
-                      ...p.payment,
-                      method: e.target.value,
-                    },
-                  }))
+                  handleMethodChange(e.target.value)
                 }
               >
                 <option value="cash">Cash</option>

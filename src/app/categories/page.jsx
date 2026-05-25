@@ -46,13 +46,13 @@ export default function CategoriesPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/category');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch categories');
       }
-      
+
       const data = await response.json();
-      
+
       // Transform API data to include mapped type
       const transformedCategories = (data || []).map(item => ({
         id: item.id,
@@ -61,7 +61,7 @@ export default function CategoriesPage() {
         type: mapApiTypeToDisplayType(item.type),
         createdAt: item.createdat,
       }));
-      
+
       setCategories(transformedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -84,7 +84,7 @@ export default function CategoriesPage() {
 
     try {
       const apiType = mapDisplayTypeToApiType(categoryType);
-      
+
       const newCategory = {
         name: categoryName.trim(),
         type: apiType,
@@ -101,10 +101,10 @@ export default function CategoriesPage() {
       }
 
       const result = await response.json();
-      
-      setCategories(prev => [...prev, { 
-        id: result.id || Date.now(), 
-        name: categoryName.trim(), 
+
+      setCategories(prev => [...prev, {
+        id: result.id || Date.now(),
+        name: categoryName.trim(),
         type: categoryType,
         originalType: apiType,
       }]);
@@ -123,7 +123,7 @@ export default function CategoriesPage() {
 
     try {
       const apiType = mapDisplayTypeToApiType(selectedCategory.type);
-      
+
       const updatedCategory = {
         name: categoryName.trim(),
         type: apiType,
@@ -223,45 +223,44 @@ export default function CategoriesPage() {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg border border-gray-200 p-1 inline-flex gap-1">
+        <div className="bg-white rounded-lg border border-gray-200 p-1 flex flex-col sm:flex-row gap-1 w-full sm:w-fit">
           <button
             onClick={() => {
               setActiveTab("inventory");
               setCategoryType("inventory");
             }}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "inventory"
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors w-full sm:w-auto ${activeTab === "inventory"
                 ? "bg-gray-900 text-white"
                 : "text-gray-600 hover:bg-gray-100"
-            }`}
+              }`}
           >
             <Package size={16} />
             Inventory
           </button>
+
           <button
             onClick={() => {
               setActiveTab("products");
               setCategoryType("products");
             }}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "products"
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors w-full sm:w-auto ${activeTab === "products"
                 ? "bg-gray-900 text-white"
                 : "text-gray-600 hover:bg-gray-100"
-            }`}
+              }`}
           >
             <ShoppingBag size={16} />
             Products
           </button>
+
           <button
             onClick={() => {
               setActiveTab("ledger");
               setCategoryType("ledger");
             }}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "ledger"
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors w-full sm:w-auto ${activeTab === "ledger"
                 ? "bg-gray-900 text-white"
                 : "text-gray-600 hover:bg-gray-100"
-            }`}
+              }`}
           >
             <BookOpen size={16} />
             Ledger
@@ -491,3 +490,9 @@ export default function CategoriesPage() {
     </ProtectedRoute>
   );
 }
+
+
+
+
+
+

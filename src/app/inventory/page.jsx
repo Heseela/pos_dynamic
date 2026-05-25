@@ -37,14 +37,14 @@ export default function InventoryPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/inventory');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch inventory');
       }
-      
+
       const data = await response.json();
       setInventory(data);
-      
+
       const uniqueCategories = [...new Set(data.map(item => item.category).filter(cat => cat && cat !== ""))];
       setCategories(uniqueCategories);
     } catch (error) {
@@ -64,13 +64,13 @@ export default function InventoryPage() {
     const matchesSearch =
       item.name?.toLowerCase().includes(searchLower) ||
       item.category?.toLowerCase().includes(searchLower);
-    
+
     const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
-    
+
     return matchesSearch && matchesCategory;
   });
 
-  const sortedInventory = [...filteredInventory].sort((a, b) => 
+  const sortedInventory = [...filteredInventory].sort((a, b) =>
     (a.name || '').localeCompare(b.name || '')
   );
 
@@ -95,7 +95,7 @@ export default function InventoryPage() {
     if (selectedItems.length === paginatedInventory.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(paginatedInventory.map((item) =>item.id));
+      setSelectedItems(paginatedInventory.map((item) => item.id));
     }
   };
 
@@ -110,7 +110,7 @@ export default function InventoryPage() {
       const deletePromises = selectedItems.map(id =>
         fetch(`/api/inventory/${id}`, { method: 'DELETE' })
       );
-      
+
       await Promise.all(deletePromises);
       toast.success(`${selectedItems.length} item(s) deleted successfully`);
       fetchInventory();
@@ -129,15 +129,15 @@ export default function InventoryPage() {
 
   const handleDelete = async () => {
     if (!itemToDelete) return;
-    
+
     try {
-      const itemId =itemToDelete.id;
+      const itemId = itemToDelete.id;
       const response = await fetch(`/api/inventory/${itemId}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) throw new Error('Failed to delete');
-      
+
       toast.success('Item deleted successfully');
       fetchInventory();
       setDeleteModal(false);
@@ -209,26 +209,33 @@ export default function InventoryPage() {
     <ProtectedRoute allowedRoles={["admin", "branch_head"]}>
       <Toaster position="top-right" />
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Left Content */}
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
               Inventory Management
             </h1>
+
             <p className="text-sm text-gray-500 mt-0.5">
-              {sortedInventory.length} {sortedInventory.length === 1 ? "item" : "items"}
+              {sortedInventory.length}{" "}
+              {sortedInventory.length === 1 ? "item" : "items"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Right Buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={exportToCSV}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all w-full sm:w-auto"
             >
               <Download size={16} />
               Export
             </button>
+
             <button
               onClick={() => router.push("/inventory/add")}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all shadow-sm hover:shadow"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all shadow-sm hover:shadow w-full sm:w-auto"
             >
               <Plus size={16} />
               Add Item
@@ -306,11 +313,10 @@ export default function InventoryPage() {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${
-                showFilters
+              className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${showFilters
                   ? "bg-gray-900 text-white border-gray-900"
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <Filter size={16} />
               Filters

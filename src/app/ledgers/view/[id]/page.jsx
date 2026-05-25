@@ -210,41 +210,46 @@ export default function ViewLedgerPage() {
         <div className="max-w-7xl mx-auto">
 
           {/* HEADER */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/ledgers")}
-                className="p-2 rounded-lg hover:bg-white transition"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {transaction.type} Details
-                </h1>
-                <p className="text-sm text-gray-500">
-                  ID: {transaction.id}
-                </p>
-              </div>
-            </div>
+         <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-center lg:justify-between">
+  {/* Left Section */}
+  <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+    <button
+      onClick={() => router.push("/ledgers")}
+      className="p-2 rounded-lg hover:bg-white transition shrink-0"
+    >
+      <ArrowLeft size={20} />
+    </button>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => router.push(`/ledgers/edit/${transaction.id}`)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
-              >
-                <Edit size={16} />
-                Edit
-              </button>
-              <button
-                onClick={() => setDeleteModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-red-50 hover:border-red-200 transition"
-              >
-                <Trash2 size={16} />
-                Delete
-              </button>
-            </div>
-          </div>
+    <div className="min-w-0">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">
+        {transaction.type} Details
+      </h1>
+
+      <p className="text-xs sm:text-sm text-gray-500 break-all">
+        ID: {transaction.id}
+      </p>
+    </div>
+  </div>
+
+  {/* Right Section */}
+  <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+    <button
+      onClick={() => router.push(`/ledgers/edit/${transaction.id}`)}
+      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition w-full sm:w-auto"
+    >
+      <Edit size={16} />
+      Edit
+    </button>
+
+    <button
+      onClick={() => setDeleteModal(true)}
+      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-red-50 hover:border-red-200 transition w-full sm:w-auto"
+    >
+      <Trash2 size={16} />
+      Delete
+    </button>
+  </div>
+</div>
 
           {/* MAIN CARD */}
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
